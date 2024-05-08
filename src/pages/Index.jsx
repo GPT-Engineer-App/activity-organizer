@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { client } from "../../lib/crud";
 import { Box, Button, Input, List, ListItem, Text, VStack, IconButton, useToast } from "@chakra-ui/react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
@@ -18,14 +19,33 @@ const Index = () => {
       });
       return;
     }
-    setTodos([...todos, inputValue]);
+    const newTodo = { text: inputValue, id: Date.now().toString() };
+    client.set(`todo:${newTodo.id}`, newTodo).then((success) => {
+      if (success) {
+        setTodos([...todos, newTodo]);
+      }
+    });
     setInputValue("");
   };
 
   const handleDeleteTodo = (index) => {
-    const newTodos = todos.filter((_, i) => i !== index);
-    setTodos(newTodos);
+    const todoToDelete = todos[index];
+    client.delete(`todo:${todoToDelete.id}`).then((success) => {
+      if (success) {
+        const newTodos = todos.filter((_, i) => i !== index);
+        setTodos(newTodos);
+      }
+    });
   };
+
+  useEffect(() => {
+    client.getWithPrefix("todo:").then((data) => {
+      if (data) {
+        const loadedTodos = data.map((item) => item.value);
+        setTodos(loadedTodos);
+      }
+    });
+  }, []);
 
   return (
     <VStack p={4}>
